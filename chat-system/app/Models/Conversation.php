@@ -4,28 +4,30 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Enums\ConversationType;
-use Illuminate\Support\Str;
 
 class Conversation extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
-
-    protected static function booted()
-    {
-        static::creating(function ($model) {
-            if (empty($model->uuid)) {
-                $model->uuid = (string) Str::uuid();
-            }
-        });
-    }
-
-    protected $casts = [
-        'last_message_at' => 'datetime',
-        'type' => ConversationType::class,
+    // QUAN TRỌNG: Phải khai báo đủ các cột này thì mới tạo được nhóm
+    protected $fillable = [
+        'uuid', 
+        'name', 
+        'type', 
+        'avatar', 
+        'owner_id', 
+        'department_id', 
+        'last_message_at',
+        'status'
     ];
+
+    // Quan hệ: Một nhóm có nhiều thành viên
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'conversation_user')
+                    ->withPivot('role', 'joined_at')
+                    ->withTimestamps();
+    }
 
     // Quan hệ: Một hội thoại có nhiều tin nhắn
     public function messages()
@@ -33,10 +35,9 @@ class Conversation extends Model
         return $this->hasMany(Message::class);
     }
 
-    // Quan hệ: Hội thoại có nhiều thành viên (Many-to-Many)
-    public function users()
+    // Helper: Lấy tin nhắn cuối cùng
+    public function lastMessage()
     {
-        return $this->belongsToMany(User::class, 'conversation_user');
+        return $this->hasOne(Message::class)->latest();
     }
-
 }

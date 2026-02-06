@@ -41,6 +41,10 @@ Route::middleware(['auth'])->group(function () {
         
         // 5. Tạo cuộc hội thoại mới (ĐANG THIẾU)
         Route::post('/conversations/check', [ChatApiController::class, 'checkOrCreateConversation']);
+        // API Tạo nhóm mới
+        Route::post('/conversations/create', [ChatApiController::class, 'createGroup']);
+        // API Tìm user
+        Route::get('/users/search', [ChatApiController::class, 'searchUsers']);
     });
 });
 

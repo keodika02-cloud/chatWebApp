@@ -15,12 +15,10 @@ class Message extends Model
         'user_id', 
         'body', 
         'type', 
-        'uuid',
-        'attachment_path',
-        'attachment_type',
+        'attachment_path', 
+        'attachment_type', 
         'attachment_name'
     ];
-
     protected static function booted()
     {
         static::creating(function ($model) {

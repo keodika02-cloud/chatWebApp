@@ -64,8 +64,8 @@ class User extends Authenticatable
     // 2. User tham gia nhiều Cuộc hội thoại
     public function conversations()
     {
-        return $this->belongsToMany(Conversation::class)
-                    ->withPivot(['is_admin', 'last_read_at'])
+        return $this->belongsToMany(Conversation::class, 'conversation_user')
+                    ->withPivot('role', 'joined_at')
                     ->withTimestamps();
     }
 

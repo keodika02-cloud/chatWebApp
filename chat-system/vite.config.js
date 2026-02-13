@@ -13,4 +13,13 @@ export default defineConfig({
         react(),
         tailwindcss(),
     ],
+    server: {
+        host: '0.0.0.0', // Cho phép truy cập từ ngoài Docker
+        hmr: {
+            host: 'localhost', // Hot Module Replacement trỏ về localhost
+        },
+        watch: {
+            usePolling: true, // Bắt buộc trên Windows/WSL để nhận diện thay đổi file
+        }
+    },
 });

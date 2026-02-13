@@ -6,9 +6,10 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Client\ChatController;
 use App\Http\Controllers\Api\ChatApiController;
+use App\Http\Controllers\Api\SalesController; // <--- 1. THÊM DÒNG NÀY
 
 // =========================================================================
-// 1. GUEST ROUTES (Dành cho người chưa đăng nhập)
+// 1. GUEST ROUTES
 // =========================================================================
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -16,7 +17,7 @@ Route::middleware('guest')->group(function () {
 });
 
 // =========================================================================
-// 2. AUTH ROUTES (Dành cho người ĐÃ đăng nhập)
+// 2. AUTH ROUTES
 // =========================================================================
 Route::middleware(['auth'])->group(function () {
 
@@ -25,26 +26,47 @@ Route::middleware(['auth'])->group(function () {
     // --- CLIENT CHAT APP ---
     Route::get('/', [ChatController::class, 'index'])->name('chat.index');
 
-    // --- AJAX API (QUAN TRỌNG: ĐÂY LÀ PHẦN BẠN ĐANG THIẾU) ---
+    // --- AJAX API ---
     Route::prefix('ajax')->group(function() {
-        // 1. Lấy danh sách hội thoại cũ
+        // --- Chat Routes (Cũ) ---
         Route::get('/conversations', [ChatApiController::class, 'getConversations']);
-        
-        // 2. Lấy nội dung tin nhắn
         Route::get('/conversations/{id}/messages', [ChatApiController::class, 'getMessages']);
-        
-        // 3. Gửi tin nhắn mới (ĐANG THIẾU)
         Route::post('/conversations/{id}/messages', [ChatApiController::class, 'sendMessage']);
-        
-        // 4. Tìm kiếm đồng nghiệp (ĐANG THIẾU -> Nguyên nhân lỗi tìm kiếm)
+        Route::post('/conversations/{id}/read', [ChatApiController::class, 'markAsRead']);
         Route::get('/users/search', [ChatApiController::class, 'searchUsers']);
-        
-        // 5. Tạo cuộc hội thoại mới (ĐANG THIẾU)
         Route::post('/conversations/check', [ChatApiController::class, 'checkOrCreateConversation']);
-        // API Tạo nhóm mới
         Route::post('/conversations/create', [ChatApiController::class, 'createGroup']);
-        // API Tìm user
-        Route::get('/users/search', [ChatApiController::class, 'searchUsers']);
+
+        // Group Management
+        Route::get('/conversations/{id}/members', [ChatApiController::class, 'getGroupMembers']);
+        Route::put('/conversations/{id}/name', [ChatApiController::class, 'updateGroupName']);
+        Route::post('/conversations/{id}/members', [ChatApiController::class, 'addMembers']);
+        Route::delete('/conversations/{id}/members/{userId}', [ChatApiController::class, 'removeMember']);
+        Route::post('/conversations/{id}/leave', [ChatApiController::class, 'leaveGroup']);
+
+        // --- 2. SALES / CRM ROUTES (MỚI THÊM VÀO ĐÂY) ---
+        // Tìm kiếm sản phẩm
+        Route::get('/sales/products', [SalesController::class, 'searchProducts']);
+        
+        // Lấy thông tin khách hàng & lịch sử đơn
+        Route::get('/sales/customer/{id}', [SalesController::class, 'getCustomerStats']);
+        
+        // Tạo đơn hàng mới
+        Route::post('/sales/orders', [SalesController::class, 'createOrder']);
+        Route::post('/sales/customer/{id}/update', [SalesController::class, 'updateCustomerProfile']);
+        
+        Route::get('/customers/{id}/history', [ChatApiController::class, 'getCustomerHistory']);
+        Route::put('/customers/{id}', [\App\Http\Controllers\Api\CustomerController::class, 'update']);
+        Route::put('/customers/{id}/tags', [\App\Http\Controllers\Api\CustomerController::class, 'updateTags']);
+        
+        Route::post('/tasks', [\App\Http\Controllers\Api\TaskController::class, 'store']);
+        Route::get('/customers/{id}/tasks', [\App\Http\Controllers\Api\TaskController::class, 'index']);
+
+        Route::post('/orders', [\App\Http\Controllers\Api\OrderController::class, 'store']);
+        Route::get('/customers/{id}/orders', [\App\Http\Controllers\Api\OrderController::class, 'index']);
+
+        // --- 3. EMPLOYEE / FRIENDS ROUTES ---
+        Route::get('/users/internal', [ChatApiController::class, 'getInternalUsers']);
     });
 });
 

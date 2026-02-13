@@ -3,13 +3,25 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-    // Lấy theme từ localStorage hoặc mặc định là 'system'
+    // 1. Theme Configuration (Dark / Light)
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'system');
+
+    // 2. Color Configuration (Blue / Purple / Green / etc)
+    const [primaryColor, setPrimaryColor] = useState(localStorage.getItem('primaryColor') || 'blue');
+
+    const colors = {
+        'blue': { hex: '#3b82f6', cls: 'text-blue-500' },
+        'violet': { hex: '#8b5cf6', cls: 'text-violet-500' },
+        'green': { hex: '#22c55e', cls: 'text-green-500' },
+        'orange': { hex: '#f97316', cls: 'text-orange-500' },
+        'rose': { hex: '#f43f5e', cls: 'text-rose-500' },
+        'teal': { hex: '#14b8a6', cls: 'text-teal-500' },
+    };
 
     useEffect(() => {
         const root = window.document.documentElement;
 
-        // Hàm xóa class cũ
+        // --- Apply Theme (Dark / Light) ---
         const removeOldTheme = () => {
             root.classList.remove('dark');
             root.classList.remove('light');
@@ -24,11 +36,18 @@ export function ThemeProvider({ children }) {
             root.classList.add(theme);
         }
 
-        // Lưu vào storage
-        localStorage.setItem('theme', theme);
-    }, [theme]);
+        // --- Apply Pimary Color (CSS Variable) ---
+        // This is the key: We update --color-primary dynamically
+        const selectedColor = colors[primaryColor] ? colors[primaryColor].hex : colors['blue'].hex;
+        root.style.setProperty('--color-primary', selectedColor);
 
-    // Lắng nghe sự thay đổi của hệ thống nếu đang chọn 'system'
+        // Save preferences
+        localStorage.setItem('theme', theme);
+        localStorage.setItem('primaryColor', primaryColor);
+
+    }, [theme, primaryColor]);
+
+    // Listen for system theme changes
     useEffect(() => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
         const handleChange = () => {
@@ -43,7 +62,7 @@ export function ThemeProvider({ children }) {
     }, [theme]);
 
     return (
-        <ThemeContext.Provider value={{ theme, setTheme }}>
+        <ThemeContext.Provider value={{ theme, setTheme, primaryColor, setPrimaryColor, colors }}>
             {children}
         </ThemeContext.Provider>
     );

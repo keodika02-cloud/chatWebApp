@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 export default function CreateGroupModal({ onClose, onGroupCreated }) {
     const [groupName, setGroupName] = useState('');
@@ -12,7 +13,7 @@ export default function CreateGroupModal({ onClose, onGroupCreated }) {
         axios.get('/ajax/users/search').then(res => setUsers(res.data));
     }, []);
 
-    const filteredUsers = users.filter(u => 
+    const filteredUsers = users.filter(u =>
         u.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -35,7 +36,7 @@ export default function CreateGroupModal({ onClose, onGroupCreated }) {
             onGroupCreated();
             onClose(); // Đóng popup khi xong
         } catch (error) {
-            alert("Lỗi: " + (error.response?.data?.message || "Không thể tạo nhóm"));
+            toast.error("❌ Lỗi: " + (error.response?.data?.message || "Không thể tạo nhóm"));
         } finally {
             setLoading(false);
         }
@@ -44,7 +45,7 @@ export default function CreateGroupModal({ onClose, onGroupCreated }) {
     return (
         // CARD: Kích thước cố định w-72 (288px), nền trắng, bo góc
         <div className="w-72 bg-white rounded-xl border border-gray-200 flex flex-col overflow-hidden">
-            
+
             {/* Header nhỏ */}
             <div className="bg-gray-50 px-3 py-2 border-b flex justify-between items-center">
                 <span className="font-bold text-xs text-gray-700 uppercase tracking-wide">Nhóm mới</span>
@@ -55,8 +56,8 @@ export default function CreateGroupModal({ onClose, onGroupCreated }) {
 
             <div className="p-3">
                 {/* Input Tên nhóm */}
-                <input 
-                    type="text" 
+                <input
+                    type="text"
                     className="w-full bg-gray-100 border-none rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-400 mb-2 transition"
                     placeholder="Đặt tên nhóm..."
                     value={groupName}
@@ -79,8 +80,8 @@ export default function CreateGroupModal({ onClose, onGroupCreated }) {
                 {/* Ô tìm kiếm người dùng */}
                 <div className="relative mb-2">
                     <i className="fas fa-search absolute left-2.5 top-2 text-gray-400 text-[10px]"></i>
-                    <input 
-                        type="text" 
+                    <input
+                        type="text"
                         className="w-full border border-gray-200 rounded-md pl-7 pr-2 py-1.5 text-xs focus:border-blue-400 outline-none"
                         placeholder="Thêm thành viên..."
                         value={searchTerm}
@@ -95,8 +96,8 @@ export default function CreateGroupModal({ onClose, onGroupCreated }) {
                     {filteredUsers.map(user => {
                         const isSelected = selectedUsers.some(u => u.id === user.id);
                         return (
-                            <div 
-                                key={user.id} 
+                            <div
+                                key={user.id}
                                 onClick={() => toggleUser(user)}
                                 className={`flex items-center gap-2 p-1.5 rounded-md cursor-pointer transition select-none
                                     ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
@@ -112,7 +113,7 @@ export default function CreateGroupModal({ onClose, onGroupCreated }) {
                 </div>
 
                 {/* Nút Tạo */}
-                <button 
+                <button
                     onClick={handleSubmit}
                     disabled={!groupName || selectedUsers.length === 0 || loading}
                     className="w-full mt-3 bg-blue-600 text-white py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition disabled:opacity-50 shadow-sm"

@@ -39,4 +39,33 @@ class Message extends Model
     {
         return $this->belongsTo(Conversation::class);
     }
+    // 2. Helper để xác định người gửi là ai (Dùng cho Frontend dễ xử lý)
+    // Trả về: 'staff' hoặc 'customer'
+    public function getSenderTypeAttribute()
+    {
+        return $this->user_id ? 'staff' : 'customer';
+    }
+
+    // 3. Lấy thông tin người gửi (Tên + Avatar) bất kể là ai
+    public function getSenderInfoAttribute()
+    {
+        if ($this->user_id) {
+            // Là nhân viên
+            return [
+                'name' => $this->user->name ?? 'Nhân viên',
+                'avatar' => $this->user->avatar_url ?? '/default-avatar.png',
+                'type' => 'staff'
+            ];
+        } else {
+            // Là khách hàng -> Lấy từ Conversation -> SocialAccount -> Name
+            // (Giả sử bạn đã load relation conversation.socialAccount)
+            $socialAccount = $this->conversation ? $this->conversation->socialAccount : null;
+            
+            return [
+                'name' => $socialAccount->name ?? 'Khách hàng',
+                'avatar' => $socialAccount->avatar ?? '/default-customer.png',
+                'type' => 'customer'
+            ];
+        }
+    }
 }

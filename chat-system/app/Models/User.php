@@ -65,7 +65,7 @@ class User extends Authenticatable
     public function conversations()
     {
         return $this->belongsToMany(Conversation::class, 'conversation_user')
-                    ->withPivot('role', 'joined_at')
+                    ->withPivot('role', 'joined_at', 'is_assigned', 'last_read_at')
                     ->withTimestamps();
     }
 

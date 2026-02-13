@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import CreateGroupModal from './CreateGroupModal';
+import CreateGroupModal from '../Modals/CreateGroupModal';
 
 export default function Sidebar({ conversations, activeChat, onSelectUser, loading, onReload }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [showCreateGroup, setShowCreateGroup] = useState(false);
-    const popupRef = useRef(null); 
+    const popupRef = useRef(null);
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -29,7 +29,7 @@ export default function Sidebar({ conversations, activeChat, onSelectUser, loadi
     // --- LOGIC TÌM KIẾM ---
     const displayConversations = useMemo(() => {
         if (!searchTerm.trim()) return sortedConversations;
-        return sortedConversations.filter(conv => 
+        return sortedConversations.filter(conv =>
             (conv.name || '').toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [sortedConversations, searchTerm]);
@@ -55,10 +55,10 @@ export default function Sidebar({ conversations, activeChat, onSelectUser, loadi
                         </button>
                     )}
                 </div>
-                
+
                 {!searchTerm && (
-                    <div className="relative" ref={popupRef}> 
-                        <button 
+                    <div className="relative" ref={popupRef}>
+                        <button
                             onClick={() => setShowCreateGroup(!showCreateGroup)}
                             className={`w-9 h-9 rounded-full flex items-center justify-center transition shadow-sm
                                 ${showCreateGroup ? 'bg-blue-100 text-blue-600' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'}`}
@@ -68,9 +68,9 @@ export default function Sidebar({ conversations, activeChat, onSelectUser, loadi
                         {showCreateGroup && (
                             <div className="absolute top-11 right-0 z-50 drop-shadow-xl animate-fadeIn origin-top-right">
                                 <div className="absolute -top-1.5 right-3 w-3 h-3 bg-white rotate-45 border-l border-t border-gray-200"></div>
-                                <CreateGroupModal 
-                                    onClose={() => setShowCreateGroup(false)} 
-                                    onGroupCreated={() => { setShowCreateGroup(false); if(onReload) onReload(); }}
+                                <CreateGroupModal
+                                    onClose={() => setShowCreateGroup(false)}
+                                    onGroupCreated={() => { setShowCreateGroup(false); if (onReload) onReload(); }}
                                 />
                             </div>
                         )}
@@ -100,7 +100,7 @@ export default function Sidebar({ conversations, activeChat, onSelectUser, loadi
                             `}
                         >
                             {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] bg-blue-600 rounded-r-full"></div>}
-                            
+
                             <div className="relative shrink-0 ml-1.5">
                                 <img src={conv.avatar} className={`w-12 h-12 border border-gray-100 object-cover ${isGroup ? 'rounded-xl' : 'rounded-full'}`} />
                                 {conv.is_online && !isGroup && <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></span>}
@@ -113,7 +113,7 @@ export default function Sidebar({ conversations, activeChat, onSelectUser, loadi
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <p className={`text-[13px] truncate flex-1 ${isActive ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
-                                        {isGroup && !conv.last_message.includes(':') && <span className="text-gray-400 text-[10px] mr-1 border px-1 rounded bg-gray-50">Nhóm</span>} 
+                                        {isGroup && !conv.last_message.includes(':') && <span className="text-gray-400 text-[10px] mr-1 border px-1 rounded bg-gray-50">Nhóm</span>}
                                         {conv.last_message}
                                     </p>
                                 </div>

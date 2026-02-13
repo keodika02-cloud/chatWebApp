@@ -27,6 +27,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\UserActivity::class,
         ]); 
+        
+        // FIX LỖI 401/419 (CSRF)
+        $middleware->validateCsrfTokens(except: [
+            'api/webhook/facebook',
+            'api/conversations/*/read', // <--- THÊM DÒNG NÀY
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

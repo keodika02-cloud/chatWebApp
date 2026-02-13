@@ -19,6 +19,7 @@
     </script>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.jsx'])
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden font-sans">

@@ -15,7 +15,8 @@ Schema::create('messages', function (Blueprint $table) {
     $table->id();
     $table->uuid('uuid')->unique(); // Optimistic UI
     $table->foreignId('conversation_id')->constrained()->cascadeOnDelete();
-    $table->foreignId('user_id')->nullable()->constrained(); // Nullable cho System Msg
+        // QUAN TRỌNG: Cho phép null để đánh dấu tin nhắn của khách
+        $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
     
     $table->enum('type', ['text', 'image', 'file', 'system'])->default('text');
     $table->text('body')->nullable();

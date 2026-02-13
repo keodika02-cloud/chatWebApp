@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import axios from 'axios';
 import EmojiPicker from 'emoji-picker-react';
-import { playSound, sendDesktopNotification } from '../../utils/notification';
+import { playSound, sendDesktopNotification } from '../../../utils/notification';
+import InviteMemberModal from '../Modals/InviteMemberModal';
+import MessageBubble from '../Common/MessageBubble';
+import Avatar from '../Common/Avatar';
 
 export default function ChatWindow({
     activeChat,
@@ -17,6 +20,7 @@ export default function ChatWindow({
     const [previewUrl, setPreviewUrl] = useState(null);
     const [loading, setLoading] = useState(false);
     const [showPicker, setShowPicker] = useState(false);
+    const [showInviteModal, setShowInviteModal] = useState(false); // <--- State Modal
 
     const messagesEndRef = useRef(null);
     const scrollContainerRef = useRef(null);
@@ -91,6 +95,8 @@ export default function ChatWindow({
         if (inputRef.current) inputRef.current.focus();
     };
 
+
+
     const handleSendMessage = async (e) => {
         if (e) e.preventDefault();
         const content = newMessage.trim();
@@ -103,10 +109,11 @@ export default function ChatWindow({
         const tempId = Date.now();
         const optimisticMsg = {
             id: tempId,
+            user_id: currentUser.id, // <--- QUAN TRỌNG: Để MessageBubble nhận diện là "Me" ngay lập tức
             body: content,
             is_me: true,
-            created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            sender: { name: currentUser.name },
+            created_at: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            sender: { name: currentUser.name, avatar: currentUser.avatar }, // Show avatar immediately
             attachment_type: attachment ? (attachment.type.startsWith('image/') ? 'image' : 'file') : null,
             attachment_path: attachment && attachment.type.startsWith('image/') ? URL.createObjectURL(attachment) : null,
             attachment_name: attachment ? attachment.name : null
@@ -118,7 +125,7 @@ export default function ChatWindow({
             const formData = new FormData();
             formData.append('body', content);
             if (attachment) formData.append('attachment', attachment);
-            
+
             await axios.post(`/ajax/conversations/${activeChat.conversation_id}/messages`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
@@ -141,35 +148,92 @@ export default function ChatWindow({
     }
 
     return (
-        <main className="flex-1 flex flex-col h-full bg-white dark:bg-[#313338] transition-colors duration-200 relative">
-            
+        <main className="flex-1 flex flex-col h-full bg-slate-50 relative overflow-hidden transition-colors duration-200">
+
+            {/* Pattern chấm bi background */}
+            <div className="absolute inset-0 opacity-5 pointer-events-none"
+                style={{ backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+            </div>
+
+            {/* --- HEADER --- */}
+            {/* --- HEADER --- */}
             {/* --- HEADER --- */}
             <header className="h-12 border-b border-gray-200 dark:border-[#26272D] flex items-center justify-between px-4 bg-white dark:bg-[#313338] shadow-sm z-20 shrink-0">
                 <div className="flex items-center gap-3">
                     <button onClick={onBack} className="md:hidden text-gray-500 dark:text-gray-200">
                         <i className="fas fa-chevron-left text-xl"></i>
                     </button>
-                    
+
                     <div className="flex items-center gap-2">
                         <div className="relative">
-                            <img src={activeChat.partner_avatar || activeChat.avatar} className="w-8 h-8 rounded-full bg-gray-300 object-cover" />
+                            <img
+                                src={activeChat?.social_account?.avatar || activeChat.partner_avatar || activeChat.avatar || "/default-avatar.png"}
+                                className="w-10 h-10 rounded-full border border-gray-200 object-cover"
+                                alt="Avatar"
+                                onError={(e) => { e.target.onerror = null; e.target.src = "https://ui-avatars.com/api/?name=" + (activeChat.name || '?') }}
+                            />
                             {activeChat.is_online && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-[#313338]"></div>}
                         </div>
                         <div>
                             <h3 className="font-bold text-gray-900 dark:text-gray-100 text-[15px] flex items-center gap-1">
-                                {activeChat.type === 'group' ? <i className="fas fa-hashtag text-gray-400 text-xs"></i> : ''} 
+                                {activeChat.type === 'group' ? <i className="fas fa-hashtag text-gray-400 text-xs"></i> : ''}
                                 {activeChat.partner_name || activeChat.name}
                             </h3>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-gray-500 dark:text-gray-300">
-                    <button className="hover:text-gray-800 dark:hover:text-white transition"><i className="fas fa-phone-alt"></i></button>
-                    <button className="hover:text-gray-800 dark:hover:text-white transition"><i className="fas fa-video"></i></button>
-                    <button onClick={onToggleDetails} className={`hover:text-gray-800 dark:hover:text-white transition ${showDetails ? 'text-blue-500 dark:text-blue-400' : ''}`}>
-                        <i className="fas fa-user-friends"></i>
+                {/* Nút chức năng thay đổi theo đối tượng */}
+                <div className="flex items-center gap-3 text-gray-500 dark:text-gray-300">
+
+                    {/* Hiển thị avatar nhân viên đang support (CSKH) */}
+                    {activeChat.staff_members && activeChat.staff_members.length > 0 && (
+                        <div className="flex -space-x-2 mr-2 hidden sm:flex">
+                            {activeChat.staff_members.map(staff => (
+                                <Avatar
+                                    key={staff.id}
+                                    src={staff.avatar}
+                                    name={staff.name}
+                                    className="w-8 h-8 rounded-full border-2 border-white dark:border-[#313338] object-cover"
+                                    title={staff.name}
+                                />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Nút Invite Staff - CHỈ HIỆN KHI LÀ KHÁCH HÀNG HOẶC GROUP */}
+                    <button
+                        onClick={() => setShowInviteModal(true)}
+                        className="bg-blue-100 hover:bg-blue-200 text-blue-600 dark:bg-blue-900 dark:text-blue-100 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 transition"
+                        title="Mời thêm nhân viên hỗ trợ"
+                    >
+                        <i className="fas fa-user-plus"></i> <span className="hidden sm:inline">Mời</span>
                     </button>
+
+                    <div className="h-4 w-[1px] bg-gray-300 dark:bg-gray-600 mx-1"></div>
+
+                    {/* Nếu là ĐỒNG NGHIỆP (Internal) */}
+                    {!activeChat.is_customer && (
+                        <>
+                            <button className="hover:text-gray-800 dark:hover:text-white transition" title="Gọi điện"><i className="fas fa-phone-alt"></i></button>
+                            <button className="hover:text-gray-800 dark:hover:text-white transition" title="Video Call"><i className="fas fa-video"></i></button>
+                        </>
+                    )}
+
+                    {/* Nếu là KHÁCH HÀNG (Customer) */}
+                    {activeChat.is_customer && (
+                        <>
+                            <button title="Gắn thẻ" className="hover:text-gray-800 dark:hover:text-white transition"><i className="fas fa-tag"></i></button>
+                            <button
+                                onClick={onToggleDetails}
+                                className={`flex items-center gap-1 transition ${showDetails ? 'text-blue-500 dark:text-blue-400' : 'hover:text-gray-800 dark:hover:text-white'}`}
+                                title="Tạo đơn hàng / Xem CRM"
+                            >
+                                <i className="fas fa-shopping-cart"></i>
+                                <span className="text-xs font-bold hidden sm:inline">Tạo đơn</span>
+                            </button>
+                        </>
+                    )}
                 </div>
             </header>
 
@@ -178,88 +242,91 @@ export default function ChatWindow({
                 {loading && <div className="text-center py-4"><i className="fas fa-spinner fa-spin text-blue-500"></i></div>}
 
                 {messages.map((msg, index) => {
-                    const isMe = msg.is_me;
-                    const isEmojiOnly = isOnlyEmojis(msg.body);
-                    const prevIsMe = messages[index - 1]?.is_me === isMe;
-                    const showAvatar = !isMe && (!prevIsMe);
+                    // Ép kiểu ID về số để so sánh chính xác
+                    const msgUserId = msg.user_id ? parseInt(msg.user_id) : null;
+                    const myId = currentUser ? parseInt(currentUser.id) : null;
+
+                    // Message có user_id => Là nhân viên (Staff)
+                    // Lưu ý: Dùng != null để bắt cả null và undefined
+                    const isStaff = msg.user_id != null;
+
+                    // Là tôi nếu: flag is_me có sẵn (từ optimistic) HOẶC user_id khớp
+                    const isMe = msg.is_me || (isStaff && msgUserId === myId);
 
                     return (
-                        <div key={msg.id || index} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group mb-1`}>
-                            {!isMe && (
-                                <div className="w-10 flex-shrink-0 flex items-start">
-                                    {showAvatar ? (
-                                        <img src={msg.sender?.avatar || activeChat.partner_avatar} className="w-8 h-8 rounded-full object-cover mt-1 cursor-pointer" />
-                                    ) : <div className="w-8"></div>}
-                                </div>
-                            )}
-
-                            <div className="max-w-[80%]">
-                                {!isMe && showAvatar && activeChat.type === 'group' && (
-                                    <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 ml-1 mb-0.5 block">
-                                        {msg.sender?.name}
-                                    </span>
-                                )}
-
-                                <div className={`px-3 py-2 text-[15px] break-words relative transition-colors
-                                    ${isMe 
-                                        ? 'bg-[#0084ff] text-white rounded-l-2xl rounded-tr-2xl rounded-br-md' 
-                                        : 'bg-[#F2F3F5] dark:bg-[#2B2D31] text-gray-900 dark:text-gray-100 rounded-r-2xl rounded-tl-2xl rounded-bl-md'}
-                                    ${isEmojiOnly ? '!bg-transparent !p-0 text-4xl' : ''}
-                                `}>
-                                    {msg.attachment_type === 'image' && msg.attachment_path && (
-                                        <img src={msg.attachment_path} className="max-w-[240px] rounded-lg mb-1 cursor-pointer" onClick={() => window.open(msg.attachment_path)} />
-                                    )}
-                                    {msg.body}
-                                </div>
-                            </div>
-                        </div>
+                        <MessageBubble
+                            key={msg.id || index}
+                            message={msg}
+                            isMe={isMe}
+                            isStaff={isStaff}
+                            currentUser={currentUser}
+                        />
                     );
                 })}
                 <div ref={messagesEndRef} />
             </div>
 
             {/* --- INPUT AREA --- */}
-            <div className="p-3 bg-white dark:bg-[#313338] border-t border-gray-200 dark:border-[#26272D] relative z-30">
+            <div className="p-4 bg-white border-t border-gray-200 z-30">
                 {attachment && (
-                    <div className="absolute bottom-full left-4 mb-2 bg-[#F2F3F5] dark:bg-[#2B2D31] p-2 rounded-lg shadow-lg flex items-center gap-2 border border-gray-200 dark:border-gray-700">
+                    <div className="absolute bottom-full left-4 mb-2 bg-white p-2 rounded-lg shadow-lg flex items-center gap-2 border border-gray-200">
                         {previewUrl ? <img src={previewUrl} className="w-10 h-10 object-cover rounded" /> : <i className="fas fa-file text-blue-500 text-2xl"></i>}
-                        <span className="text-xs dark:text-gray-200 truncate max-w-[150px]">{attachment.name}</span>
-                        <button onClick={clearAttachment} className="text-gray-500 hover:text-red-500"><i className="fas fa-times-circle"></i></button>
+                        <span className="text-xs text-gray-700 truncate max-w-[150px]">{attachment.name}</span>
+                        <button onClick={clearAttachment} className="text-gray-400 hover:text-red-500"><i className="fas fa-times-circle"></i></button>
                     </div>
                 )}
 
                 {showPicker && (
-                    <div className="absolute bottom-16 right-4 z-50">
-                        <EmojiPicker onEmojiClick={onEmojiClick} theme="auto" height={350} />
+                    <div className="absolute bottom-16 right-4 z-50 shadow-xl border border-gray-100 rounded-lg overflow-hidden">
+                        <EmojiPicker onEmojiClick={onEmojiClick} theme="light" height={350} />
                     </div>
                 )}
 
-                <div className="flex items-center bg-[#EBEDEF] dark:bg-[#383A40] rounded-lg px-2 py-2">
-                    <button onClick={() => fileInputRef.current.click()} className="w-8 h-8 flex items-center justify-center text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition rounded-full">
-                        <i className="fas fa-plus-circle text-xl"></i>
+                <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2 border border-transparent focus-within:border-blue-400 focus-within:bg-white focus-within:shadow-md transition-all">
+                    {/* Attachment Button */}
+                    <button onClick={() => fileInputRef.current.click()} className="text-gray-400 hover:text-blue-500 transition">
+                        <i className="fas fa-paperclip text-lg"></i>
                     </button>
                     <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
 
-                    <form onSubmit={handleSendMessage} className="flex-1 mx-2">
+                    {/* Text Input */}
+                    <form onSubmit={handleSendMessage} className="flex-1 flex items-center">
                         <input
                             ref={inputRef}
                             type="text"
-                            className="w-full bg-transparent border-none focus:ring-0 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 px-0 py-1 outline-none"
-                            placeholder={`Nhắn cho ${activeChat.partner_name || activeChat.name}`}
+                            className="flex-1 bg-transparent border-none outline-none text-sm px-2 py-1 text-gray-800 placeholder-gray-400"
+                            placeholder="Nhập tin nhắn..."
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                         />
                     </form>
 
-                    <button onClick={() => setShowPicker(!showPicker)} className="w-8 h-8 flex items-center justify-center text-gray-500 dark:text-gray-300 hover:text-yellow-500 transition rounded-full">
-                        <i className="fas fa-smile text-xl"></i>
+                    {/* Emoji Button */}
+                    <button onClick={() => setShowPicker(!showPicker)} className="text-gray-400 hover:text-yellow-500 transition">
+                        <i className="far fa-smile text-lg"></i>
                     </button>
-                    
-                    <button onClick={handleSendMessage} className={`w-8 h-8 flex items-center justify-center transition rounded-full ml-1 ${newMessage || attachment ? 'text-blue-500 hover:bg-blue-500/10' : 'text-gray-400 cursor-not-allowed'}`}>
-                        <i className="fas fa-paper-plane"></i>
+
+                    {/* Send Button */}
+                    <button
+                        onClick={handleSendMessage}
+                        className={`p-2 rounded-full transition ${newMessage || attachment ? 'text-blue-600 hover:bg-blue-50' : 'text-gray-300 cursor-not-allowed'}`}
+                    >
+                        <i className="fas fa-paper-plane text-lg"></i>
                     </button>
                 </div>
             </div>
+
+            {/* --- MODAL MỜI THÀNH VIÊN --- */}
+            {showInviteModal && (
+                <InviteMemberModal
+                    isOpen={showInviteModal}
+                    onClose={() => setShowInviteModal(false)}
+                    activeChat={activeChat}
+                    onMemberAdded={() => {
+                        setShowInviteModal(false);
+                    }}
+                />
+            )}
         </main>
     );
 }
